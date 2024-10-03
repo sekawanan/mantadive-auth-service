@@ -14,11 +14,6 @@ class LoginRequest(BaseModel):
     email: Optional[str]
     password: str
 
-class PhoneRegister(BaseModel):
-    username: Optional[str]
-    phone_number: str
-    full_name: Optional[str] = None
-
 class ForgotPasswordRequest(BaseModel):
     email: Optional[EmailStr] = None
     phone_number: Optional[str] = None

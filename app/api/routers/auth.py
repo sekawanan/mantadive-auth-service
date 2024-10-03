@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from app.schemas.user import UserCreate, UserOut
+from app.schemas.user import UserCreate, UserOut, UserPhoneCreate
 from app.use_cases.auth_use_cases import register_user, verify_email, forgot_password, reset_password, register_phone_user, oauth_callback
 from app.api.dependencies import get_user_repository
 from app.domain.repositories.user_repository import IUserRepository
-from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest, PhoneRegister, LoginRequest, Token
+from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest, LoginRequest, Token
 from fastapi.responses import RedirectResponse
 from app.core.config import settings
 from app.core.security import create_access_token
@@ -16,7 +16,7 @@ def register(user: UserCreate, repo: IUserRepository = Depends(get_user_reposito
     return register_user(user, repo)
 
 @router.post("/register/phone", response_model=UserOut)
-def register_phone(user: PhoneRegister, repo: IUserRepository = Depends(get_user_repository)):
+def register_phone(user: UserPhoneCreate, repo: IUserRepository = Depends(get_user_repository)):
     return register_phone_user(user, repo)
 
 @router.get("/verify-email")
@@ -46,7 +46,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), repo: IUserRepositor
     if not user.hashed_password or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "Bearer"}
 
 @router.get("/auth/google")
 def google_auth():

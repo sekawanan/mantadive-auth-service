@@ -1,8 +1,7 @@
 # app/use_cases/auth_use_cases.py
 from datetime import timedelta
 from fastapi import HTTPException, status
-from app.schemas.user import UserCreate, UserOut
-from app.schemas.auth import PhoneRegister
+from app.schemas.user import UserCreate, UserPhoneCreate, UserOut
 from app.domain.repositories.user_repository import IUserRepository
 from app.domain.models.user import User
 from app.core.security import get_password_hash, create_access_token, decode_access_token
@@ -31,7 +30,7 @@ def register_user(user_create: UserCreate, repo: IUserRepository) -> UserOut:
     send_verification_email(created_user.email, created_user.username)
     return UserOut.from_orm(created_user)
 
-def register_phone_user(user_create: PhoneRegister, repo: IUserRepository) -> UserOut:
+def register_phone_user(user_create: UserPhoneCreate, repo: IUserRepository) -> UserOut:
     existing_user = repo.get_user_by_phone(user_create.phone_number)
     if existing_user:
         raise HTTPException(status_code=400, detail="Phone number already registered")
@@ -40,14 +39,16 @@ def register_phone_user(user_create: PhoneRegister, repo: IUserRepository) -> Us
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    hashed_password = get_password_hash(user_create.password)
     user = User(
         username=user_create.username,
         phone_number=user_create.phone_number,
         full_name=user_create.full_name,
-        is_active=True  # User is active but not verified
+        is_active=True,
+        hashed_password=hashed_password,
     )
     created_user = repo.create_user(user)
-    send_whatsapp_verification(created_user.phone_number, created_user.username)
+    send_whatsapp_verification(created_user.phone_number, created_user.full_name)
     return UserOut.from_orm(created_user)
 
 def oauth_callback(code: str, repo: IUserRepository) -> UserOut:

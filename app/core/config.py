@@ -14,9 +14,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     GOOGLE_REDIRECT_URI: str
 
-    TWILIO_ACCOUNT_SID: str
-    TWILIO_AUTH_TOKEN: str
-    WHATSAPP_FROM: str
+    WHATSAPP_HOST_URL: str
+    WHATSAPP_SESSION_ID: str
 
     SECRET_KEY: str = "YOUR_SECRET_KEY"
     ALGORITHM: str = "HS256"
