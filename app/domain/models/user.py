@@ -1,10 +1,10 @@
+# app/domain/models/user.py
+
 import uuid
 from sqlalchemy import Column, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
+from .base import Base  # Importing Base from base.py
 import datetime
-
-Base = declarative_base()
 
 class User(Base):
     __tablename__ = 'users'
