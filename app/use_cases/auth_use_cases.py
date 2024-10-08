@@ -1,16 +1,19 @@
 # app/use_cases/auth_use_cases.py
 from datetime import timedelta
 from fastapi import HTTPException, status
-from app.schemas.user import UserCreate, UserOut
-from app.schemas.auth import PhoneRegister
+from fastapi.security import OAuth2PasswordRequestForm
+from app.schemas.user import UserCreate, UserPhoneCreate, UserOut
 from app.domain.repositories.user_repository import IUserRepository
 from app.domain.models.user import User
 from app.core.security import get_password_hash, create_access_token, decode_access_token
 from app.infrastructure.smtp import send_verification_email, send_password_reset_email
 from app.infrastructure.whatsapp import send_whatsapp_verification, send_whatsapp_password_reset
 from app.infrastructure.google_oauth import get_google_user_info, get_google_oauth_token
+from app.use_cases.token_use_cases import issue_tokens, revoke_all_user_tokens
+from app.domain.repositories.refresh_token_repository import IRefreshTokenRepository
+from app.schemas.auth import Token
 
-def register_user(user_create: UserCreate, repo: IUserRepository) -> UserOut:
+def register_user(user_create: UserCreate, repo: IUserRepository, refresh_repo: IRefreshTokenRepository) -> UserOut:
     existing_user = repo.get_user_by_email(user_create.email)
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -31,7 +34,23 @@ def register_user(user_create: UserCreate, repo: IUserRepository) -> UserOut:
     send_verification_email(created_user.email, created_user.username)
     return UserOut.from_orm(created_user)
 
-def register_phone_user(user_create: PhoneRegister, repo: IUserRepository) -> UserOut:
+def login_user(form_data: OAuth2PasswordRequestForm, repo: IUserRepository, refresh_repo: IRefreshTokenRepository) -> Token:
+    user = repo.get_user_by_username(form_data.username)
+    if not user:
+        user = repo.get_user_by_email(form_data.username)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    if not user.is_verified:
+        raise HTTPException(status_code=400, detail="Unverified user")
+    from app.core.security import verify_password
+    if not user.hashed_password or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    tokens = issue_tokens(user, refresh_repo)
+    return Token(**tokens)
+
+def register_phone_user(user_create: UserPhoneCreate, repo: IUserRepository) -> UserOut:
     existing_user = repo.get_user_by_phone(user_create.phone_number)
     if existing_user:
         raise HTTPException(status_code=400, detail="Phone number already registered")
@@ -40,14 +59,16 @@ def register_phone_user(user_create: PhoneRegister, repo: IUserRepository) -> Us
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already taken")
 
+    hashed_password = get_password_hash(user_create.password)
     user = User(
         username=user_create.username,
         phone_number=user_create.phone_number,
         full_name=user_create.full_name,
-        is_active=True  # User is active but not verified
+        is_active=True,
+        hashed_password=hashed_password,
     )
     created_user = repo.create_user(user)
-    send_whatsapp_verification(created_user.phone_number, created_user.username)
+    send_whatsapp_verification(created_user.phone_number, created_user.full_name)
     return UserOut.from_orm(created_user)
 
 def oauth_callback(code: str, repo: IUserRepository) -> UserOut:
