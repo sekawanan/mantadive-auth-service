@@ -5,8 +5,9 @@ set -e
 
 # Wait for PostgreSQL to be ready
 echo "Waiting for PostgreSQL to start..."
-while ! nc -z $DB_HOST $DB_PORT; do
-  sleep 0.1
+until nc -z -v -w30 $DB_HOST $DB_PORT; do
+  echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT..."
+  sleep 1
 done
 echo "PostgreSQL started"
 

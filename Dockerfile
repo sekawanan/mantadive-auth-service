@@ -20,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libpq-dev \
     gcc \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -35,9 +36,6 @@ FROM dependencies AS app
 # Copy the application code
 COPY . .
 
-# Make sure the entrypoint script is executable
-RUN chmod +x ./entrypoint.sh
-
 # Expose the port the app runs on
 EXPOSE 8000
 
@@ -46,5 +44,11 @@ EXPOSE 8000
 # =========================
 FROM app AS final
 
+# Copy the entrypoint script from the current directory to the container
+COPY ./entrypoint.sh /app/entrypoint.sh
+
+# Ensure the entrypoint script is executable
+RUN chmod +x /app/entrypoint.sh
+
 # Define the entrypoint
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
