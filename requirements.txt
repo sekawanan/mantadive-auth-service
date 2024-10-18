@@ -12,3 +12,4 @@ requests
 oauthlib
 twilio
 pydantic_settings
+python-multipart
