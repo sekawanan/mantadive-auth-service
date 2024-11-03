@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from app.schemas.user import UserCreate, UserOut, UserPhoneCreate
-from app.use_cases.auth_use_cases import register_user, verify_email, forgot_password, reset_password, register_phone_user, login_user, oauth_callback
+from app.use_cases.auth_use_cases import register_user, verify_email, forgot_password, reset_password, register_phone_user, login_user, oauth_callback, resend_verification_email
 from app.use_cases.token_use_cases import refresh_access_token, revoke_refresh_token, issue_tokens
 from app.api.dependencies import get_user_repository, get_refresh_token_repository
 from app.domain.repositories.user_repository import IUserRepository
 from app.domain.repositories.refresh_token_repository import IRefreshTokenRepository
-from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest, LoginRequest, Token, TokenRefreshRequest, TokenRefreshResponse
+from app.schemas.auth import ForgotPasswordRequest, ResetPasswordRequest, LoginRequest, Token, TokenRefreshRequest, TokenRefreshResponse, ResendVerificationEmailRequest
 from app.utils.responses import create_success_response, create_error_response
 from fastapi.responses import RedirectResponse
 from app.core.config import settings
@@ -116,3 +116,17 @@ def google_callback(code: str,
     except Exception as e:
         # For unexpected errors
         return create_error_response(500, "Internal Server Error")
+    
+@router.post("/resend-verification-email", response_model=BaseResponse[dict])
+def resend_verification_email_endpoint(
+    request: ResendVerificationEmailRequest,
+    repo: IUserRepository = Depends(get_user_repository)
+):
+    """
+    Endpoint to resend the verification email to the user.
+    """
+    try:
+        message = resend_verification_email(request.email, repo)
+        return create_success_response({"message": message})
+    except HTTPException as e:
+        return create_error_response(e.status_code, e.detail)

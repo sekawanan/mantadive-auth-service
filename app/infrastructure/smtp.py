@@ -6,12 +6,12 @@ from app.core.config import settings
 from app.core.security import create_access_token
 from datetime import timedelta
 
-def send_verification_email(email: str, username: str) -> None:
-    token = create_access_token(data={"sub": username}, expires_delta=timedelta(hours=24))
+def send_verification_email(email: str, full_name: str, user_id: str, username: str) -> None:
+    token = create_access_token(data={"user_id": user_id, "username": username}, expires_delta=timedelta(hours=24))
     params = urlencode({"token": token})
     verification_link = f"{settings.VERIFICATION_BASE_URL}?{params}"
     subject = "Verify Your Email"
-    body = f"Hello {username},\n\nPlease verify your email by clicking the link below:\n{verification_link}\n\nThank you!"
+    body = f"Hello {full_name},\n\nPlease verify your email by clicking the link below:\n{verification_link}\n\nThank you!"
 
     msg = MIMEText(body)
     msg["Subject"] = subject

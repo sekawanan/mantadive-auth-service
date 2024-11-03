@@ -11,8 +11,8 @@ from app.core.config import settings
 import uuid
 
 def issue_tokens(user: User, refresh_repo: IRefreshTokenRepository) -> Dict[str, str]:
-    access_token = create_access_token(data={"sub": user.username})
-    refresh_token_str = create_refresh_token(data={"sub": user.username})
+    access_token = create_access_token(data={"user_id": str(user.id), "username": user.username})
+    refresh_token_str = create_refresh_token(data={"user_id": str(user.id), "username": user.username})
     
     refresh_token = RefreshToken(
         token=refresh_token_str,
@@ -27,7 +27,7 @@ def refresh_access_token(refresh_token: str, user_repo: IUserRepository, refresh
     payload = decode_refresh_token(refresh_token)
     if not payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
-    username = payload.get("sub")
+    username = payload.get("username")
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token payload")
     user = user_repo.get_user_by_username(username)
