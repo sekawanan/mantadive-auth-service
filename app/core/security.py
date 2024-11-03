@@ -48,14 +48,28 @@ def create_refresh_token(data: Dict[str, str], expires_delta: Optional[timedelta
 
 def decode_access_token(token: str) -> Optional[Dict[str, str]]:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            issuer="mantadive",
+            audience="diver-users",
+        )
         return payload
-    except JWTError:
+    except (JWTError) as e:
+        print(e)
         return None
 
 def decode_refresh_token(token: str) -> Optional[Dict[str, str]]:
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            issuer="mantadive",
+            audience="diver-users",
+        )
         return payload
-    except JWTError:
+    except (JWTError) as e:
+        print(e)
         return None

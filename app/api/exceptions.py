@@ -9,7 +9,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(status_code=exc.status_code, content=response.dict())
 
 async def generic_exception_handler(request: Request, exc: Exception):
-    # For unexpected errors
     error = ErrorDetail(code=500, message="Internal Server Error")
     response = BaseResponse.error_response(error)
     return JSONResponse(status_code=500, content=response.dict())

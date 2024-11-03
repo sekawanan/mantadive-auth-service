@@ -31,7 +31,7 @@ def register_user(user_create: UserCreate, repo: IUserRepository, refresh_repo: 
         is_active=True  # User is active but not verified
     )
     created_user = repo.create_user(user)
-    send_verification_email(created_user.email, created_user.username)
+    send_verification_email(created_user.email, created_user.full_name, str(created_user.id), created_user.username)
     return UserOut.from_orm(created_user)
 
 def login_user(form_data: OAuth2PasswordRequestForm, repo: IUserRepository, refresh_repo: IRefreshTokenRepository) -> Token:
@@ -68,7 +68,7 @@ def register_phone_user(user_create: UserPhoneCreate, repo: IUserRepository) -> 
         hashed_password=hashed_password,
     )
     created_user = repo.create_user(user)
-    send_whatsapp_verification(created_user.phone_number, created_user.full_name)
+    send_whatsapp_verification(created_user.phone_number, created_user.full_name, str(created_user.id), created_user.username)
     return UserOut.from_orm(created_user)
 
 def oauth_callback(code: str, repo: IUserRepository) -> UserOut:
@@ -84,7 +84,7 @@ def oauth_callback(code: str, repo: IUserRepository) -> UserOut:
             is_verified=True
         )
         user = repo.create_user(user)
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"user_id": str(user.id), "username": user.username})
     return UserOut(
         id=user.id,
         username=user.username,
@@ -96,7 +96,7 @@ def verify_email(token: str, repo: IUserRepository) -> dict:
     payload = decode_access_token(token)
     if not payload:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-    username = payload.get("sub")
+    username = payload.get("username")
     user = repo.get_user_by_username(username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -116,7 +116,7 @@ def forgot_password(request, repo: IUserRepository) -> dict:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    token = create_access_token(data={"sub": user.username}, expires_delta=timedelta(hours=1))
+    token = create_access_token(data={"user_id": str(user.id), "username": user.username}, expires_delta=timedelta(hours=1))
     if user.email:
         send_password_reset_email(user.email, token)
     if user.phone_number:
@@ -128,10 +128,41 @@ def reset_password(request, repo: IUserRepository) -> dict:
     payload = decode_access_token(request.token)
     if not payload:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
-    username = payload.get("sub")
+    username = payload.get("username")
     user = repo.get_user_by_username(username)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user.hashed_password = get_password_hash(request.new_password)
     repo.update_user(user)
     return {"message": "Password reset successfully"}
+
+
+def resend_verification_email(email: str, repo: IUserRepository) -> str:
+    """
+    Resends the verification email to the user if they are not already verified.
+    """
+    user: User = repo.get_user_by_email(email)
+    
+    if user is None:
+        # To prevent user enumeration, respond with a generic message
+        return "If an account with this email exists, a verification email has been sent."
+    
+    if user.is_verified:
+        # Inform the user that their email is already verified
+        return "Your email is already verified."
+    
+    try:
+        # Send the verification email
+        send_verification_email(
+            email=user.email,
+            full_name=user.full_name,
+            user_id=str(user.id),
+            username=user.username
+        )
+        return "A new verification email has been sent."
+    except Exception as e:
+        # Log the exception details here as needed
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send verification email. Please try again later."
+        )

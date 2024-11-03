@@ -18,7 +18,7 @@ def get_current_user(token: str = Depends(oauth2_scheme),
     payload = decode_access_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail="Invalid token")
-    username = payload.get("sub")
+    username = payload.get("username")
     if not username:
         raise HTTPException(status_code=401, detail="Invalid token payload")
     user = repo.get_user_by_username(username)
