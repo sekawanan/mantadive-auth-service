@@ -1,5 +1,6 @@
 # app/schemas/base_response.py
 from typing import Generic, Optional, Type, TypeVar, Union
+from fastapi import HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -31,4 +32,12 @@ class BaseResponse(Generic[T], BaseModel):
             errors=errors,
             timeStamp=datetime.utcnow(),
             success=False
+        )
+    
+    @classmethod
+    def raise_http_exception(cls, errors: Union[ErrorDetail, list[ErrorDetail]]):
+        # You can choose to raise a 400 status code globally
+        raise HTTPException(
+            status_code=400,
+            detail=cls.error_response(errors).dict()  # Return the error response body
         )

@@ -9,7 +9,7 @@ def create_success_response(payload: T) -> BaseResponse[T]:
 
 def create_error_response(code: int, message: str) -> BaseResponse[None]:
     error = ErrorDetail(code=code, message=message)
-    return BaseResponse.error_response(error)
+    return BaseResponse.raise_http_exception(error)
 
 def create_validation_error_response(errors: List[dict]) -> BaseResponse[None]:
     error_details = [ErrorDetail(code=422, message=err['msg']) for err in errors]
