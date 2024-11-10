@@ -21,8 +21,8 @@ def register(user: UserCreate,
     try:
         created_user = register_user(user, repo, refresh_repo)
         return create_success_response(created_user)
-    except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+    except HTTPException as e:       
+        raise e
 
 @router.post("/register/phone", response_model=BaseResponse[UserOut])
 def register_phone(user: UserPhoneCreate, 
@@ -32,7 +32,7 @@ def register_phone(user: UserPhoneCreate,
         created_user = register_phone_user(user, repo, refresh_repo)
         return create_success_response(created_user)
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.get("/verify-email", response_model=BaseResponse[dict])
 def verify_email_endpoint(token: str, repo: IUserRepository = Depends(get_user_repository)):
@@ -40,7 +40,7 @@ def verify_email_endpoint(token: str, repo: IUserRepository = Depends(get_user_r
         message = verify_email(token, repo)
         return create_success_response({"message": message})
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.post("/forgot-password", response_model=BaseResponse[dict])
 def forgot_password_request(request: ForgotPasswordRequest, 
@@ -49,7 +49,7 @@ def forgot_password_request(request: ForgotPasswordRequest,
         message = forgot_password(request, repo)
         return create_success_response({"message": message})
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.post("/reset-password", response_model=BaseResponse[dict])
 def reset_password_request(request: ResetPasswordRequest, 
@@ -58,7 +58,7 @@ def reset_password_request(request: ResetPasswordRequest,
         message = reset_password(request, repo)
         return create_success_response({"message": message})
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.post("/token", response_model=BaseResponse[Token])
 def login(form_data: OAuth2PasswordRequestForm = Depends(), 
@@ -68,7 +68,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(),
         token = login_user(form_data, repo, refresh_repo)
         return create_success_response(token)
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.post("/refresh-token", response_model=BaseResponse[TokenRefreshResponse])
 def refresh_token_endpoint(request: TokenRefreshRequest, 
@@ -79,7 +79,7 @@ def refresh_token_endpoint(request: TokenRefreshRequest,
         response = TokenRefreshResponse(**tokens)
         return create_success_response(response)
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.post("/logout", response_model=BaseResponse[dict])
 def logout_endpoint(request: TokenRefreshRequest, 
@@ -88,7 +88,7 @@ def logout_endpoint(request: TokenRefreshRequest,
         revoke_refresh_token(request.refresh_token, refresh_repo)
         return create_success_response({"message": "Successfully logged out"})
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
 
 @router.get("/auth/google")
 def google_auth():
@@ -114,8 +114,7 @@ def google_callback(code: str,
     except HTTPException as e:
         return create_error_response(e.status_code, e.detail)
     except Exception as e:
-        # For unexpected errors
-        return create_error_response(500, "Internal Server Error")
+        raise e
     
 @router.post("/resend-verification-email", response_model=BaseResponse[dict])
 def resend_verification_email_endpoint(
@@ -129,4 +128,4 @@ def resend_verification_email_endpoint(
         message = resend_verification_email(request.email, repo)
         return create_success_response({"message": message})
     except HTTPException as e:
-        return create_error_response(e.status_code, e.detail)
+        raise e
