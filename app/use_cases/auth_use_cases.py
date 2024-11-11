@@ -27,11 +27,10 @@ def register_user(user_create: UserCreate, repo: IUserRepository, refresh_repo: 
         username=user_create.username,
         email=user_create.email,
         hashed_password=hashed_password,
-        full_name=user_create.full_name,
-        is_active=True  # User is active but not verified
+        is_active=True
     )
     created_user = repo.create_user(user)
-    send_verification_email(created_user.email, created_user.full_name, str(created_user.id), created_user.username)
+    send_verification_email(created_user.email, created_user.email, str(created_user.id), created_user.username)
     return UserOut.from_orm(created_user)
 
 def login_user(form_data: OAuth2PasswordRequestForm, repo: IUserRepository, refresh_repo: IRefreshTokenRepository) -> Token:
