@@ -22,3 +22,7 @@ class IUserRepository(ABC):
     @abstractmethod
     def update_user(self, user: User) -> None:
         pass
+
+    @abstractmethod
+    def delete_user(self, email: str) -> None:
+        pass

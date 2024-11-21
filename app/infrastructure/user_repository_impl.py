@@ -27,3 +27,9 @@ class UserRepository(IUserRepository):
     def update_user(self, user: User) -> None:
         self.db.commit()
         self.db.refresh(user)
+
+    def delete_user(self, email: str) -> None:
+        user = self.get_user_by_email(email)
+        if user:
+            self.db.delete(user)
+            self.db.commit()

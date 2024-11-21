@@ -33,6 +33,19 @@ def register_user(user_create: UserCreate, repo: IUserRepository, refresh_repo: 
     send_verification_email(created_user.email, created_user.email, str(created_user.id), created_user.username)
     return UserOut.from_orm(created_user)
 
+def delete_account(email: str, repo: IUserRepository, refresh_repo: IRefreshTokenRepository) -> dict:
+    """
+    Deletes a user account and revokes all associated refresh tokens.
+    """
+    user = repo.get_user_by_email(email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Perform account deletion
+    repo.delete_user(email)
+
+    return {"message": "Account deleted successfully"}
+
 def login_user(form_data: OAuth2PasswordRequestForm, repo: IUserRepository, refresh_repo: IRefreshTokenRepository) -> Token:
     user = repo.get_user_by_username(form_data.username)
     if not user:

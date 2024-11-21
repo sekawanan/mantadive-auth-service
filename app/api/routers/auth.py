@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from app.api.routers.users import get_current_user
+from app.domain.models.user import User
 from app.schemas.user import UserCreate, UserOut, UserPhoneCreate
-from app.use_cases.auth_use_cases import register_user, verify_email, forgot_password, reset_password, register_phone_user, login_user, oauth_callback, resend_verification_email
+from app.use_cases.auth_use_cases import delete_account, register_user, verify_email, forgot_password, reset_password, register_phone_user, login_user, oauth_callback, resend_verification_email
 from app.use_cases.token_use_cases import refresh_access_token, revoke_refresh_token, issue_tokens
 from app.api.dependencies import get_user_repository, get_refresh_token_repository
 from app.domain.repositories.user_repository import IUserRepository
@@ -87,6 +89,21 @@ def logout_endpoint(request: TokenRefreshRequest,
     try:
         revoke_refresh_token(request.refresh_token, refresh_repo)
         return create_success_response({"message": "Successfully logged out"})
+    except HTTPException as e:
+        raise e
+    
+@router.delete("/delete-account", response_model=BaseResponse[dict])
+def delete_account_endpoint(
+    current_user: User = Depends(get_current_user),
+    repo: IUserRepository = Depends(get_user_repository),
+    refresh_repo: IRefreshTokenRepository = Depends(get_refresh_token_repository)
+):
+    """
+    Endpoint to delete a user account.
+    """
+    try:
+        message = delete_account(current_user.email, repo, refresh_repo)
+        return create_success_response(message)
     except HTTPException as e:
         raise e
 
